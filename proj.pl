@@ -2,14 +2,14 @@
 
 :- [codigo_comum].
 
-% combinacoes_soma(N, Els, Soma, Combs)
+% --------------------combinacoes_soma(N, Els, Soma, Combs)--------------------
 
 combinacoes_soma(N, Els, Soma, Combs) :-
   findall(AuxComb, (combinacao(N, Els, AuxComb), 
 					sumlist(AuxComb, Soma)), AuxCombs),
 	sort(0, <, AuxCombs, Combs).
 
-% permutacoes_soma(N, Els, Soma, Perms)
+% --------------------permutacoes_soma(N, Els, Soma, Combs)--------------------
 
 permutacoes_soma(N, Els, Soma, Perms) :-
   combinacoes_soma(N, Els, Soma, Combs),
@@ -17,7 +17,7 @@ permutacoes_soma(N, Els, Soma, Perms) :-
   % para ordenar as sublistas pelo primeiro (0) elemento
   sort(0, <, AuxPerms, Perms).
 
-% espaco_fila(Fila, Esp, H_V)
+% -------------------------espaco_fila(Fila, Esp, H_V)-------------------------
 
 espaco_fila(Fila, Esp, H_V) :-
 	% as novas variaveis sao a lista aux. para variaveis e a soma atual
@@ -47,6 +47,8 @@ espaco_fila([P|R], Esp, H_V, _, _) :-
 	acessa_indice(P, H_V, NovaSoma),
 	espaco_fila(R, Esp, H_V, [], NovaSoma).
 
+% predicado auxiliar - acessa_indice(L, H_V, Soma)
+
 % predicado de decisao sobre qual elemento da lista aceder
 acessa_indice(L, v, Soma) :-
 	nth0(0, L, Soma).
@@ -60,6 +62,10 @@ acessa_indice(_, H_V, _) :-
 	H_V \== h,
 	fail.
 
+% ------------------------espacos_fila(Fila, Esp, H_V)-------------------------
+
+espacos_fila(H_V, Fila, Espacos) :-
+	findall(Esp, espaco_fila(Fila, Esp, H_V), Espacos).
 
 % ---------------------------------------------------------------
 
