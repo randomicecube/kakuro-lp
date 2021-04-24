@@ -6,8 +6,7 @@
 
 combinacoes_soma(N, Els, Soma, Combs) :-
   findall(AuxComb, (combinacao(N, Els, AuxComb), 
-          sumlist(AuxComb, Soma)),
-  				AuxCombs),
+					sumlist(AuxComb, Soma)), AuxCombs),
 	sort(0, <, AuxCombs, Combs).
 
 % permutacoes_soma(N, Els, Soma, Perms)
@@ -24,35 +23,43 @@ espaco_fila(Fila, Esp, H_V) :-
 	% as novas variaveis sao a lista aux. para variaveis e a soma atual
 	espaco_fila(Fila, Esp, H_V, [], 0).
 
-% caso estejamos na presença da lista vazia
-espaco_fila([], Esp, _, VarsAtuais, SomaAtual) :-
-	length(VarsAtuais, Len), Len > 0,
-	faz_espaco(SomaAtual, VarsAtuais, Esp).
-
-% caso nao seja uma lista
+% caso o primeiro elemento da  nao seja uma lista
 espaco_fila([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
 	\+ is_list(P), !,
 	append(VarsAtuais, [P], VarsAtualizadas),
 	espaco_fila(R, Esp, H_V, VarsAtualizadas, SomaAtual).
 
-% caso seja uma lista e nao seja o primeiro elemento da fila
+% caso estejamos na presença da lista vazia
+espaco_fila([], Esp, _, VarsAtuais, SomaAtual) :-
+	length(VarsAtuais, Comp), Comp > 0, !,
+	faz_espaco(SomaAtual, VarsAtuais, Esp).
+
+% caso o primeiro elemento seja uma lista e nao seja o primeiro elemento da fila
 espaco_fila([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
 	is_list(P), % decidi incluir para o codigo ser mais claro
-	length(VarsAtuais, Len), Len > 0,
+	length(VarsAtuais, Comp), Comp > 0, 
 	faz_espaco(SomaAtual, VarsAtuais, Esp),
 	acessa_indice(P, H_V, NovaSoma),
 	espaco_fila(R, _, H_V, [], NovaSoma).
 
-% caso seja uma lista e seja o primeiro elemento da fila
+% caso o primeiro elemento seja uma lista e seja o primeiro elemento da fila
 espaco_fila([P|R], Esp, H_V, _, _) :-
 	acessa_indice(P, H_V, NovaSoma),
 	espaco_fila(R, Esp, H_V, [], NovaSoma).
 
+% predicado de decisao sobre qual elemento da lista aceder
 acessa_indice(L, v, Soma) :-
 	nth0(0, L, Soma).
 
 acessa_indice(L, h, Soma) :-
 	nth0(1, L, Soma).
+
+% salvaguarda para inputs errados
+acessa_indice(_, H_V, _) :-
+	H_V \== v,
+	H_V \== h,
+	fail.
+
 
 % ---------------------------------------------------------------
 
