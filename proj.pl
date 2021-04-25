@@ -23,26 +23,24 @@ espaco_fila(Fila, Esp, H_V) :-
 	% as novas variaveis sao a lista aux. para variaveis e a soma atual
 	espaco_fila(Fila, Esp, H_V, [], 0).
 
-% caso o primeiro elemento da  nao seja uma lista
+% quando chegamos ao fim da fila
+espaco_fila([], Esp, _, VarsAtuais, SomaAtual) :-
+	length(VarsAtuais, Comp), Comp > 0,
+	faz_espaco(SomaAtual, VarsAtuais, Esp).
+
+% quando e uma lista e vem depois de um espaco
+espaco_fila([P|_], Esp, _, VarsAtuais, SomaAtual) :-
+	is_list(P),
+	length(VarsAtuais, Comp), Comp > 0,
+	faz_espaco(SomaAtual, VarsAtuais, Esp).
+
+% quando e uma variavel (parte do espaco, portanto)
 espaco_fila([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
 	\+ is_list(P), !,
 	append(VarsAtuais, [P], VarsAtualizadas),
 	espaco_fila(R, Esp, H_V, VarsAtualizadas, SomaAtual).
 
-% caso estejamos na presença da lista vazia
-espaco_fila([], Esp, _, VarsAtuais, SomaAtual) :-
-	length(VarsAtuais, Comp), Comp > 0, !,
-	faz_espaco(SomaAtual, VarsAtuais, Esp).
-
-% caso o primeiro elemento seja uma lista e nao seja o primeiro elemento da fila
-espaco_fila([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
-	is_list(P), % decidi incluir para o codigo ser mais claro
-	length(VarsAtuais, Comp), Comp > 0, 
-	faz_espaco(SomaAtual, VarsAtuais, Esp),
-	acessa_indice(P, H_V, NovaSoma),
-	espaco_fila(R, _, H_V, [], NovaSoma).
-
-% caso o primeiro elemento seja uma lista e seja o primeiro elemento da fila
+% quando e o primeiro elemento da fila/uma lista depois de outra lista
 espaco_fila([P|R], Esp, H_V, _, _) :-
 	acessa_indice(P, H_V, NovaSoma),
 	espaco_fila(R, Esp, H_V, [], NovaSoma).
@@ -66,6 +64,16 @@ acessa_indice(_, H_V, _) :-
 
 espacos_fila(H_V, Fila, Espacos) :-
 	findall(Esp, espaco_fila(Fila, Esp, H_V), Espacos).
+
+% -----------------------espacos_puzzle(Fila, Esp, H_V)------------------------
+espacos_puzzle(Puzzle, Espacos) :-
+	mat_transposta(Puzzle, Transp),
+	findall(E1, (member(F1, Puzzle), espacos_fila(h, F1, E1), E1 \== []), P1),
+	findall(E2, (member(F2, Transp), espacos_fila(v, F2, E2), E2 \== []), P2),
+	append(P1, P2, PorAlisar),
+	flatten(PorAlisar, Espacos).
+
+% predicado auxiliar para alisar uma lista de sublistas
 
 % ---------------------------------------------------------------
 
