@@ -1,4 +1,4 @@
-% Diogo Gaspar, 99207,
+% Diogo Gaspar, 99207
 
 :- [codigo_comum].
 
@@ -54,7 +54,7 @@ acessa_indice(L, v, Soma) :-
 acessa_indice(L, h, Soma) :-
 	nth0(1, L, Soma).
 
-% salvaguarda para inputs errados
+% salvaguarda para H_V's errados
 acessa_indice(_, H_V, _) :-
 	H_V \== v,
 	H_V \== h,
@@ -63,23 +63,29 @@ acessa_indice(_, H_V, _) :-
 % ------------------------espacos_fila(Fila, Esp, H_V)-------------------------
 
 espacos_fila(H_V, Fila, Espacos) :-
-	findall(Esp, espaco_fila(Fila, Esp, H_V), Espacos).
+	bagof(Esp, espaco_fila(Fila, Esp, H_V), Espacos),
+	length(Espacos, Comp),
+	Comp > 0, !.
+
+% caso a fila nao tenha espacos possiveis
+espacos_fila(_, _, []).
 
 % -----------------------espacos_puzzle(Fila, Esp, H_V)------------------------
+
 espacos_puzzle(Puzzle, Espacos) :-
 	mat_transposta(Puzzle, Transp),
-	findall(E1, (member(F1, Puzzle), espacos_fila(h, F1, E1), E1 \== []), P1),
-	findall(E2, (member(F2, Transp), espacos_fila(v, F2, E2), E2 \== []), P2),
-	append(P1, P2, PorAlisar),
+	busca_espacos(Puzzle, Horizontal, h),
+	busca_espacos(Transp, Vertical, v),
+	append(Horizontal, Vertical, PorAlisar),
 	flatten(PorAlisar, Espacos).
 
-% predicado auxiliar para alisar uma lista de sublistas
+% predicado auxiliar para ir buscar todos os espacos de uma dada grelha
+busca_espacos(L, Res, H_V) :-
+	maplist(espacos_fila(H_V), L, Res).
 
-% ---------------------------------------------------------------
+% ----------------------------------ESTRUTURAS---------------------------------
 
-% estruturas
-
-% espaco
+% ------------------------------------espaco-----------------------------------
 
 % faz_espaco(Soma, Vars, Espaco)
 
