@@ -2,11 +2,14 @@
 
 :- [codigo_comum].
 
+% ----------------------------PREDICADOS PRINCIPAIS----------------------------
+
 % --------------------combinacoes_soma(N, Els, Soma, Combs)--------------------
 
 combinacoes_soma(N, Els, Soma, Combs) :-
   findall(AuxComb, (combinacao(N, Els, AuxComb), 
 					sumlist(AuxComb, Soma)), AuxCombs),
+	% para ordenar as sublistas pelo primeiro (0) elemento
 	sort(0, <, AuxCombs, Combs).
 
 % --------------------permutacoes_soma(N, Els, Soma, Combs)--------------------
@@ -21,17 +24,19 @@ permutacoes_soma(N, Els, Soma, Perms) :-
 
 espaco_fila(Fila, Esp, H_V) :-
 	% as novas variaveis sao a lista aux. para variaveis e a soma atual
-	espaco_fila(Fila, Esp, H_V, [], 0).
+	espaco_fila(Fila, Esp, H_V, [], -1). % -1 enquanto nao houver uma soma real
 
 % quando chegamos ao fim da fila
 espaco_fila([], Esp, _, VarsAtuais, SomaAtual) :-
 	length(VarsAtuais, Comp), Comp > 0,
+	SomaAtual > -1,
 	faz_espaco(SomaAtual, VarsAtuais, Esp).
 
 % quando e uma lista e vem depois de um espaco
 espaco_fila([P|_], Esp, _, VarsAtuais, SomaAtual) :-
 	is_list(P),
 	length(VarsAtuais, Comp), Comp > 0,
+	SomaAtual > -1,
 	faz_espaco(SomaAtual, VarsAtuais, Esp).
 
 % quando e uma variavel (parte do espaco, portanto)
@@ -83,16 +88,33 @@ espacos_puzzle(Puzzle, Espacos) :-
 busca_espacos(L, Res, H_V) :-
 	maplist(espacos_fila(H_V), L, Res).
 
+% ------------espacos_com_posicoes_comuns(Espacos, Esp, Esps_com)--------------
+
+espacos_com_posicoes_comuns(Espacos, Esp, Esps_com) :-
+  vars_espaco(Esp, VarsEsp),
+	include(algum(VarsEsp), Espacos, Aux),
+	subtract(Aux, [Esp], Esps_com).
+	
+algum(Vars, Espaco) :-
+	vars_espaco(Espaco, VarsEsp),
+	findall(Var, (member(Var, VarsEsp), pertence(Vars, Var)), Aux),
+	length(Aux, CompAux),
+	CompAux > 0.
+
+% predicado auxiliar, semelhante ao member/2 mas sem a unificacao
+pertence([P|_], X) :- X == P, !.
+
+pertence([_|R], X) :- pertence(R, X).
 % ----------------------------------ESTRUTURAS---------------------------------
 
 % ------------------------------------espaco-----------------------------------
 
-% faz_espaco(Soma, Vars, Espaco)
+% faz_espaco(Soma, Vars, Espaco) - construtor
 
 faz_espaco(Soma, Vars, espaco(Soma, Vars)).
 
-% soma_espaco(Espaco, Soma)
+% soma_espaco(Espaco, Soma) - seletor
 soma_espaco(espaco(Soma, _), Soma).
 
-% vars_espaco(Espaco, Vars)
+% vars_espaco(Espaco, Vars) - seletor
 vars_espaco(espaco(_, Vars), Vars).
