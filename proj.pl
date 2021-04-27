@@ -7,8 +7,7 @@
 % --------------------combinacoes_soma(N, Els, Soma, Combs)--------------------
 
 combinacoes_soma(N, Els, Soma, Combs) :-
-  findall(AuxComb, (combinacao(N, Els, AuxComb), 
-					sumlist(AuxComb, Soma)), AuxCombs),
+  findall(Comb, (combinacao(N, Els, Comb), sumlist(Comb, Soma)), AuxCombs),
 	% para ordenar as sublistas pelo primeiro (0) elemento
 	sort(0, <, AuxCombs, Combs).
 
@@ -16,7 +15,7 @@ combinacoes_soma(N, Els, Soma, Combs) :-
 
 permutacoes_soma(N, Els, Soma, Perms) :-
   combinacoes_soma(N, Els, Soma, Combs),
-  findall(CombPer, (member(Comb, Combs), permutation(Comb, CombPer)), AuxPerms),
+  findall(Perm, (member(Comb, Combs), permutation(Comb, Perm)), AuxPerms),
   % para ordenar as sublistas pelo primeiro (0) elemento
   sort(0, <, AuxPerms, Perms).
 
@@ -85,8 +84,7 @@ espacos_puzzle(Puzzle, Espacos) :-
 	flatten(PorAlisar, Espacos).
 
 % predicado auxiliar para ir buscar todos os espacos de uma dada grelha
-busca_espacos(L, Res, H_V) :-
-	maplist(espacos_fila(H_V), L, Res).
+busca_espacos(L, Res, H_V) :- maplist(espacos_fila(H_V), L, Res).
 
 % ------------espacos_com_posicoes_comuns(Espacos, Esp, Esps_com)--------------
 
@@ -94,7 +92,9 @@ espacos_com_posicoes_comuns(Espacos, Esp, Esps_com) :-
   vars_espaco(Esp, VarsEsp),
 	include(algum(VarsEsp), Espacos, Aux),
 	subtract(Aux, [Esp], Esps_com).
-	
+
+% predicado auxiliar, verifica se ha alguam variavel em comum entre um espaco
+% e um conjunto de variaveis	
 algum(Vars, Espaco) :-
 	vars_espaco(Espaco, VarsEsp),
 	findall(Var, (member(Var, VarsEsp), pertence(Vars, Var)), Aux),
@@ -105,6 +105,18 @@ algum(Vars, Espaco) :-
 pertence([P|_], X) :- X == P, !.
 
 pertence([_|R], X) :- pertence(R, X).
+
+% ---------------permutacoes_soma_espacos(Espacos, Perms_soma)-----------------
+
+permutacoes_soma_espacos([], []).
+
+permutacoes_soma_espacos([Esp|R], [[Esp, Perms]|Perms_soma]) :-
+	soma_espaco(Esp, SomaEsp),
+	vars_espaco(Esp, VarsEsp),
+	length(VarsEsp, CompEsp),
+	permutacoes_soma(CompEsp, [1,2,3,4,5,6,7,8,9], SomaEsp, Perms),  
+	permutacoes_soma_espacos(R, Perms_soma).
+
 % ----------------------------------ESTRUTURAS---------------------------------
 
 % ------------------------------------espaco-----------------------------------
