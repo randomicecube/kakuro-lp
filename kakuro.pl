@@ -1,17 +1,19 @@
 % Diogo Gaspar, 99207
 
-:- [codigo_comum].
+:- [codigo_comum, puzzles_publicos].
 
-% ----------------------------PREDICADOS PRINCIPAIS----------------------------
+% --------------------------------------------------------------------------- %
+% ----------------------------PREDICADOS PRINCIPAIS-------------------------- %
+% --------------------------------------------------------------------------- %
 
-% --------------------combinacoes_soma(N, Els, Soma, Combs)--------------------
+% --------------------combinacoes_soma(N, Els, Soma, Combs)------------------ %
 
 combinacoes_soma(N, Els, Soma, Combs) :-
   findall(Comb, (combinacao(N, Els, Comb), sumlist(Comb, Soma)), AuxCombs),
 	% para ordenar as sublistas pelo primeiro (0) elemento
 	sort(0, <, AuxCombs, Combs).
 
-% --------------------permutacoes_soma(N, Els, Soma, Combs)--------------------
+% --------------------permutacoes_soma(N, Els, Soma, Combs)------------------ %
 
 permutacoes_soma(N, Els, Soma, Perms) :-
   combinacoes_soma(N, Els, Soma, Combs),
@@ -19,7 +21,7 @@ permutacoes_soma(N, Els, Soma, Perms) :-
   % para ordenar as sublistas pelo primeiro (0) elemento
   sort(0, <, AuxPerms, Perms).
 
-% -------------------------espaco_fila(Fila, Esp, H_V)-------------------------
+% -------------------------espaco_fila(Fila, Esp, H_V)----------------------- %
 
 espaco_fila(Fila, Esp, H_V) :-
 	% as novas variaveis sao a lista aux. para variaveis e a soma atual
@@ -64,7 +66,7 @@ acessa_indice(_, H_V, _) :-
 	H_V \== h,
 	fail.
 
-% ------------------------espacos_fila(Fila, Esp, H_V)-------------------------
+% ------------------------espacos_fila(Fila, Esp, H_V)----------------------- %
 
 espacos_fila(H_V, Fila, Espacos) :-
 	bagof(Esp, espaco_fila(Fila, Esp, H_V), Espacos),
@@ -74,7 +76,7 @@ espacos_fila(H_V, Fila, Espacos) :-
 % caso a fila nao tenha espacos possiveis
 espacos_fila(_, _, []).
 
-% -----------------------espacos_puzzle(Fila, Esp, H_V)------------------------
+% -----------------------espacos_puzzle(Fila, Esp, H_V)---------------------- %
 
 espacos_puzzle(Puzzle, Espacos) :-
 	mat_transposta(Puzzle, Transp),
@@ -86,7 +88,7 @@ espacos_puzzle(Puzzle, Espacos) :-
 % predicado auxiliar para ir buscar todos os espacos de uma dada grelha
 busca_espacos(L, Res, H_V) :- maplist(espacos_fila(H_V), L, Res).
 
-% ------------espacos_com_posicoes_comuns(Espacos, Esp, Esps_com)--------------
+% ------------espacos_com_posicoes_comuns(Espacos, Esp, Esps_com)------------ %
 
 espacos_com_posicoes_comuns(Espacos, Esp, Esps_com) :-
   vars_espaco(Esp, VarsEsp),
@@ -106,20 +108,59 @@ pertence([P|_], X) :- X == P, !.
 
 pertence([_|R], X) :- pertence(R, X).
 
-% ---------------permutacoes_soma_espacos(Espacos, Perms_soma)-----------------
+% ---------------permutacoes_soma_espacos(Espacos, Perms_soma)--------------- %
 
 permutacoes_soma_espacos([], []).
 
 permutacoes_soma_espacos([Esp|R], [[Esp, Perms]|Perms_soma]) :-
 	soma_espaco(Esp, SomaEsp),
+	faz_lista(SomaEsp, Possiveis),
 	vars_espaco(Esp, VarsEsp),
 	length(VarsEsp, CompEsp),
-	permutacoes_soma(CompEsp, [1,2,3,4,5,6,7,8,9], SomaEsp, Perms),  
+	permutacoes_soma(CompEsp, Possiveis, SomaEsp, Perms),  
 	permutacoes_soma_espacos(R, Perms_soma).
 
-% ----------------------------------ESTRUTURAS---------------------------------
+% predicado auxiliar, lista de 1 até N, caso 1 <= N < 9; de 1 a 9 caso N >= 9
+faz_lista(N, L) :-
+	N < 9 -> findall(Iterador, between(1, N, Iterador), L);
+	findall(Iterador, between(1, 9, Iterador), L).
 
-% ------------------------------------espaco-----------------------------------
+
+% ---------permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma)-------- %
+
+% -----permutacoes_possiveis_espaco(Espacos, Perms_soma, Esp, Perms_poss)---- %
+
+% -----------permutacoes_possiveis_espacos(Espacos, Perms_poss_esps)--------- %
+
+% -----------------numeros_comuns(Lst_Perms, Numeros_comuns)----------------- %
+
+numeros_comuns(Lst_Perms, Numeros_comuns) :-
+	% a tranposta sera utilizada para facilitar a comparacao
+	mat_transposta(Lst_Perms, Transp),
+	findall((Pos, N), (member(SubL, Transp), list_to_set(SubL, [_]), 
+					nth1(Pos, Transp, SubL), nth1(1, SubL, N)), Numeros_comuns).
+
+% ----------------------atribui_comuns(Perms_possiveis)---------------------- %
+
+% ---------retira_impossiveis(Perms_Possiveis, Novas_Perms_Possiveis--------- %
+
+% -------------simplifica(Perms_Possiveis, Novas_Perms_Possiveis------------- %
+
+% --------------------inicializa(Puzzle, Perms_Possiveis)-------------------- %
+
+% ------------escolhe_menos_alternativas(Perms_Possiveis, Escolha)----------- %
+
+% ------experimenta_perm(Escolha, Perms_Possiveis, Novas_Perms_Possiveis)---- %
+
+% -------------resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis)----------- %
+
+% ---------------------------------resolve(Puz)------------------------------ %
+
+% --------------------------------------------------------------------------- %
+% ----------------------------------ESTRUTURAS------------------------------- %
+% --------------------------------------------------------------------------- %
+
+% ------------------------------------espaco--------------------------------- %
 
 % faz_espaco(Soma, Vars, Espaco) - construtor
 
