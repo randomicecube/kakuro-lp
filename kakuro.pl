@@ -42,7 +42,7 @@ espaco_fila([P|_], Esp, _, VarsAtuais, SomaAtual) :-
 
 % quando e uma variavel (parte do espaco, portanto)
 espaco_fila([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
-	\+ is_list(P), !,
+	var(P), !,
 	append(VarsAtuais, [P], VarsAtualizadas),
 	espaco_fila(R, Esp, H_V, VarsAtualizadas, SomaAtual).
 
@@ -69,12 +69,10 @@ acessa_indice(_, H_V, _) :-
 % ------------------------espacos_fila(Fila, Esp, H_V)----------------------- %
 
 espacos_fila(H_V, Fila, Espacos) :-
-	bagof(Esp, espaco_fila(Fila, Esp, H_V), Espacos),
-	length(Espacos, Comp),
-	Comp > 0, !.
-
-% caso a fila nao tenha espacos possiveis
-espacos_fila(_, _, []).
+	bagof(Esp, espaco_fila(Fila, Esp, H_V), AuxEspacos),
+	length(AuxEspacos, Comp),
+	Comp > 0 -> Espacos = AuxEspacos;
+	Espacos = [].
 
 % -----------------------espacos_puzzle(Fila, Esp, H_V)---------------------- %
 
@@ -92,12 +90,12 @@ busca_espacos(L, Res, H_V) :- maplist(espacos_fila(H_V), L, Res).
 
 espacos_com_posicoes_comuns(Espacos, Esp, Esps_com) :-
   vars_espaco(Esp, VarsEsp),
-	include(algum(VarsEsp), Espacos, Aux),
+	include(alguma_var(VarsEsp), Espacos, Aux),
 	subtract(Aux, [Esp], Esps_com).
 
-% predicado auxiliar, verifica se ha alguam variavel em comum entre um espaco
+% predicado auxiliar, verifica se ha alguma variavel em comum entre um espaco
 % e um conjunto de variaveis	
-algum(Vars, Espaco) :-
+alguma_var(Vars, Espaco) :-
 	vars_espaco(Espaco, VarsEsp),
 	findall(Var, (member(Var, VarsEsp), pertence(Vars, Var)), Aux),
 	length(Aux, CompAux),
@@ -125,8 +123,23 @@ faz_lista(N, L) :-
 	N < 9 -> findall(Iterador, between(1, N, Iterador), L);
 	findall(Iterador, between(1, 9, Iterador), L).
 
-
 % ---------permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma)-------- %
+
+permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
+	espacos_com_posicoes_comuns(Espacos, Esp, Comuns),
+	permutacoes_soma_espacos([Esp], PermsEsp),
+	vars_espaco(Esp, VarsEsp),
+	permutacao_possivel_espaco_aux(Perm, Comuns, VarsEsp, PermsEsp).
+
+permutacao_possivel_espaco_aux(Perm_ini, Comuns, VarsEsp, [Perm_ini|Resto]) :-
+	bagof([IndiceEsp, IndiceEspComum], 
+				(member(EspComum, Comuns), vars_espaco(EspComum, VarsComum),
+				indices_comum(VarsEsp, VarsComum, IndiceEsp, IndiceComum)), Indices),
+	forall(member(IndicesSet, Indices), compara(IndicesSet, Comuns))
+
+
+
+	
 
 % -----permutacoes_possiveis_espaco(Espacos, Perms_soma, Esp, Perms_poss)---- %
 
