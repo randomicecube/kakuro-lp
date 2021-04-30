@@ -54,25 +54,23 @@ espaco_fila([P|R], Esp, H_V, _, _) :-
 % predicado auxiliar - acessa_indice(L, H_V, Soma)
 
 % predicado de decisao sobre qual elemento da lista aceder
-acessa_indice(L, v, Soma) :-
-	nth0(0, L, Soma).
+acessa_indice([Soma, _], v, Soma).
 
-acessa_indice(L, h, Soma) :-
-	nth0(1, L, Soma).
+acessa_indice([_, Soma], h, Soma).
 
 % salvaguarda para H_V's errados
 acessa_indice(_, H_V, _) :-
 	H_V \== v,
-	H_V \== h,
-	fail.
+	H_V \== h.
 
 % ------------------------espacos_fila(Fila, Esp, H_V)----------------------- %
 
 espacos_fila(H_V, Fila, Espacos) :-
-	bagof(Esp, espaco_fila(Fila, Esp, H_V), AuxEspacos),
-	length(AuxEspacos, Comp),
-	Comp > 0 -> Espacos = AuxEspacos;
-	Espacos = [].
+	bagof(Esp, espaco_fila(Fila, Esp, H_V), Espacos),
+	length(Espacos, Comp),
+	Comp > 0, !.
+
+espacos_fila(_, _, []).
 
 % -----------------------espacos_puzzle(Fila, Esp, H_V)---------------------- %
 
@@ -126,20 +124,30 @@ faz_lista(N, L) :-
 % ---------permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma)-------- %
 
 permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
-	espacos_com_posicoes_comuns(Espacos, Esp, Comuns),
-	permutacoes_soma_espacos([Esp], PermsEsp),
+	% descobrir os espacos com pos comuns entre Espacos e Esp
+	espacos_com_posicoes_comuns(Espacos, Esp, ComunsEsp),
+	% compilar todos os "sets" de Perms_soma com espacos que estejam em ComunsEsp
+	bagof(Comum, (member(Comum, Perms_soma), nth0(0, Esp, SubSet),
+								pertence(Esp, ComunsEsp)), ComunsPermsSoma),
+	% seletor que vai buscar as variaveis de Esp
 	vars_espaco(Esp, VarsEsp),
-	permutacao_possivel_espaco_aux(Perm, Comuns, VarsEsp, PermsEsp).
-
-permutacao_possivel_espaco_aux(Perm_ini, Comuns, VarsEsp, [Perm_ini|Resto]) :-
-	bagof([IndiceEsp, IndiceEspComum], 
-				(member(EspComum, Comuns), vars_espaco(EspComum, VarsComum),
-				indices_comum(VarsEsp, VarsComum, IndiceEsp, IndiceComum)), Indices),
-	forall(member(IndicesSet, Indices), compara(IndicesSet, Comuns))
-
-
-
 	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 % -----permutacoes_possiveis_espaco(Espacos, Perms_soma, Esp, Perms_poss)---- %
 
