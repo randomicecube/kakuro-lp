@@ -111,28 +111,17 @@ faz_lista(N, L) :-
 
 % ---------permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma)-------- %
 
-% a ideia por detras disto e a unificacao da variavel ocorrer na "scope toda",
-% ou seja acaba por ser possivel fazer a comparacao com a unificacao atual e
-% ver se todas continuam a unificar
-
 permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
-	% descobrir os espacos com pos comuns entre Espacos e Esp
 	espacos_com_posicoes_comuns(Espacos, Esp, EspsComuns),
-	% compilar todas os "sets" de Perms_soma dos espacos comuns
 	include(verifica_comuns(EspsComuns), Perms_soma, SetsComuns),
-	% obter o "set" do espaco Esp
 	permutacoes_soma_espacos([Esp], SetEspAux),
 	% alisar SetEsp
 	append(SetEspAux, SetEsp),
-	% obter as permutacoes possiveis para o espaco Esp
 	nth0(1, SetEsp, PermsEsp),
-	% obter as variaveis do espaco Esp
 	vars_espaco(Esp, VarsEsp),
-	% obter uma permutacao-membro das permutacoes de Esp
 	member(PermPossivel, PermsEsp),
-	% unificar as variaveis do espaco Esp com essa permutacao-membro
-	VarsEsp = PermPossivel,
-	verifica_unifica(SetsComuns),
+	substitui_comuns(PermPossivel, VarsEsp, SetsComuns, SetsPost),
+	verifica_unifica(SetsPost),
 	% caso possa, Perm unifica com PermPossivel
 	Perm = PermPossivel.
 
@@ -141,6 +130,37 @@ permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
 verifica_comuns(Esps, Set) :-
 	nth0(0, Set, Esp),
 	pertence(Esps, Esp).
+
+substitui_comuns(_, _, [], []) :- !.
+
+substitui_comuns(PermPossivel, VarsEsp, [P|R], [[EspMod, PermsP]|T]) :-
+	nth0(0, P, EspP),
+	nth0(1, P, PermsP),
+	vars_espaco(EspP, VarsP),
+	soma_espaco(EspP, SomaP),
+	maplist(substitui_aux(PermPossivel, VarsEsp), VarsP, VarsMod),
+	faz_espaco(SomaP, VarsMod, EspMod),
+	substitui_comuns(PermPossivel, VarsEsp, R, T).
+
+substitui_aux(_, VarsEsp, Var, VarCopy) :-
+	\+ pertence(VarsEsp, Var), !,
+	% utilizo a copia para evitar uma unificacao indesejada
+	copy_term(Var, VarCopy).
+
+substitui_aux(PermPossivel, VarsEsp, Var, ValorPerm) :-
+	% utilizo a copia para evitar uma unificacao indesejada
+	busca_indice(Indice, VarsEsp, Var),
+ 	nth0(Indice, PermPossivel, ValorPerm).
+
+% predicado auxiliar semelhante ao nth0/3, mas sem unificar
+busca_indice(Indice, VarsEsp, Var) :- busca_indice(0, Indice, VarsEsp, Var).
+
+busca_indice(Ac, Ac, [P|_], Var) :-
+	P == Var, !.
+
+busca_indice(Ac, Indice, [_|R], Var) :-
+	NewAc is Ac + 1,
+	busca_indice(NewAc, Indice, R, Var).
 
 % predicado auxiliar que verifica se com a substituicao de variaveis proposta
 % ha pelo menos uma permutacao que mantem a permutacao original certa
@@ -153,7 +173,6 @@ verifica_unifica([P|R]) :-
 	bagof(Perm, (member(Perm, Perms), subsumes_term(VarsEsp, Perm)), _),
 	% caso haja pelo menos uma, continua; caso contrario, verifica_unifica falha
 	verifica_unifica(R).
-
 
 % -----permutacoes_possiveis_espaco(Espacos, Perms_soma, Esp, Perms_poss)---- %
 
