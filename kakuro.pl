@@ -119,10 +119,11 @@ permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
 	% descobrir os espacos com pos comuns entre Espacos e Esp
 	espacos_com_posicoes_comuns(Espacos, Esp, EspsComuns),
 	% compilar todas os "sets" de Perms_soma dos espacos comuns
-	bagof(Set, (member(Set, Perms_soma), nth0(0, Set, SetEsp),
-							pertence(SetEsp, EspsComuns)), SetsComuns),
+	include(verifica_comuns(EspsComuns), Perms_soma, SetsComuns),
 	% obter o "set" do espaco Esp
-	permutacoes_soma_espacos([Esp], SetEsp),
+	permutacoes_soma_espacos([Esp], SetEspAux),
+	% alisar SetEsp
+	append(SetEspAux, SetEsp),
 	% obter as permutacoes possiveis para o espaco Esp
 	nth0(1, SetEsp, PermsEsp),
 	% obter as variaveis do espaco Esp
@@ -131,27 +132,34 @@ permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
 	member(PermPossivel, PermsEsp),
 	% unificar as variaveis do espaco Esp com essa permutacao-membro
 	VarsEsp = PermPossivel,
-	% verificar se a unificacao pode acontecer com esta permutacao
 	verifica_unifica(SetsComuns),
 	% caso possa, Perm unifica com PermPossivel
 	Perm = PermPossivel.
 
+% predicado auxiliar que recebe uma lista de espacos e um "set" de Perms_soma
+% e verifica se o espaco desse set pertence a lista
+verifica_comuns(Esps, Set) :-
+	nth0(0, Set, Esp),
+	pertence(Esps, Esp).
+
+% predicado auxiliar que verifica se com a substituicao de variaveis proposta
+% ha pelo menos uma permutacao que mantem a permutacao original certa
 verifica_unifica([]) :- !.
 
 verifica_unifica([P|R]) :-
 	nth0(0, P, Esp),
 	vars_espaco(Esp, VarsEsp),
 	nth0(1, P, Perms),
-	% os dois passos seguintes servem para verificar se pelo menos uma Perm
-	% tem unificacao possivel; pensei num forall em vez disto, ou seja todas
-	% as permutacoes terem de unificar, nao sei qual sera o correto
-	bagof(Perm, (member(Perm, Perms), subsumes_term(VarsEsp, Perm)), Possiveis),
-	length(Possiveis, Comp), Comp > 0,
+	bagof(Perm, (member(Perm, Perms), subsumes_term(VarsEsp, Perm)), _),
 	% caso haja pelo menos uma, continua; caso contrario, verifica_unifica falha
 	verifica_unifica(R).
 
 
 % -----permutacoes_possiveis_espaco(Espacos, Perms_soma, Esp, Perms_poss)---- %
+
+permutacoes_possiveis_espaco(Espacos, Perms_soma, Esp, [VarsEsp, Perms]) :-
+	vars_espaco(Esp, VarsEsp),
+	bagof(Perm, permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma), Perms).
 
 % -----------permutacoes_possiveis_espacos(Espacos, Perms_poss_esps)--------- %
 
