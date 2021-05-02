@@ -213,10 +213,25 @@ retira_impossiveis([[Vars, Perms]|R], [[Vars, NovasPossiveis]|T]) :-
 
 % -------------simplifica(Perms_Possiveis, Novas_Perms_Possiveis------------- %
 
+simplifica(Perms_Possiveis, Novas_Perms_Possiveis) :-
+	atribui_comuns(Perms_Possiveis),
+	retira_impossiveis(Perms_Possiveis, Temp),
+	Temp \== Perms_Possiveis, !, % verificar se houve alteracao
+	simplifica(Temp, Novas_Perms_Possiveis).
+
+simplifica(Perms_Possiveis, Perms_Possiveis).
 
 % --------------------inicializa(Puzzle, Perms_Possiveis)-------------------- %
 
+inicializa(Puzzle, Perms_Possiveis) :-
+	espacos_puzzle(Puzzle, Espacos),
+	permutacoes_possiveis_espacos(Espacos, Perms_poss_esps),
+	simplifica(Perms_poss_esps, Perms_Possiveis).
+
 % ------------escolhe_menos_alternativas(Perms_Possiveis, Escolha)----------- %
+
+escolhe_menos_alternativas(Perms_Possiveis, Escolha) :-
+	
 
 % ------experimenta_perm(Escolha, Perms_Possiveis, Novas_Perms_Possiveis)---- %
 
