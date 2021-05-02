@@ -21,7 +21,7 @@ permutacoes_soma(N, Els, Soma, Perms) :-
 
 espaco_fila(Fila, Esp, H_V) :-
 	% as novas variaveis sao a lista aux. para variaveis e a soma atual
-	espaco_fila(Fila, Esp, H_V, [], -1). % -1 enquanto nao houver uma soma real
+	espaco_fila(Fila, Esp, H_V, [], -1). % -1 enquanto nao houver uma soma "real"
 
 % quando chegamos ao fim da fila
 espaco_fila([], Esp, _, VarsAtuais, SomaAtual) :-
@@ -231,9 +231,23 @@ inicializa(Puzzle, Perms_Possiveis) :-
 % ------------escolhe_menos_alternativas(Perms_Possiveis, Escolha)----------- %
 
 escolhe_menos_alternativas(Perms_Possiveis, Escolha) :-
-	
+	escolhe_menos_alternativas(1, Perms_Possiveis, Escolha),
+	Escolha \== [], !.
+
+escolhe_menos_alternativas(_, [], []).
+
+escolhe_menos_alternativas(MComp, [[Vars, Perms]|R], [Vars, Perms]) :-
+	length(Perms, CompPerms), 
+	CompPerms > MComp, !,
+	escolhe_menos_alternativas(CompPerms, R, _).
+
+escolhe_menos_alternativas(MComp, [_|R], Escolha) :-
+	escolhe_menos_alternativas(MComp, R, Escolha).
 
 % ------experimenta_perm(Escolha, Perms_Possiveis, Novas_Perms_Possiveis)---- %
+
+experimenta_perm(Escolha, Perms_Possiveis, Novas_Perms_Possiveis) :-
+	
 
 % -------------resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis)----------- %
 
