@@ -1,7 +1,5 @@
 % Diogo Gaspar, 99207
 
-:- [codigo_comum, puzzles_publicos].
-
 % --------------------------------------------------------------------------- %
 % ----------------------------PREDICADOS PRINCIPAIS-------------------------- %
 % --------------------------------------------------------------------------- %
@@ -134,21 +132,17 @@ verifica_comuns(Esps, Set) :-
 substitui_comuns(_, _, [], []) :- !.
 
 substitui_comuns(PermPossivel, VarsEsp, [P|R], [[EspMod, PermsP]|T]) :-
-	nth0(0, P, EspP),
-	nth0(1, P, PermsP),
+	[EspP, PermsP] = P,
 	vars_espaco(EspP, VarsP),
 	soma_espaco(EspP, SomaP),
 	maplist(substitui_aux(PermPossivel, VarsEsp), VarsP, VarsMod),
 	faz_espaco(SomaP, VarsMod, EspMod),
 	substitui_comuns(PermPossivel, VarsEsp, R, T).
 
-substitui_aux(_, VarsEsp, Var, VarCopy) :-
-	\+ pertence(VarsEsp, Var), !,
-	% utilizo a copia para evitar uma unificacao indesejada
-	copy_term(Var, VarCopy).
+substitui_aux(_, VarsEsp, Var, Var) :-
+	\+ pertence(VarsEsp, Var), !.
 
 substitui_aux(PermPossivel, VarsEsp, Var, ValorPerm) :-
-	% utilizo a copia para evitar uma unificacao indesejada
 	busca_indice(Indice, VarsEsp, Var),
  	nth0(Indice, PermPossivel, ValorPerm).
 
@@ -167,9 +161,8 @@ busca_indice(Ac, Indice, [_|R], Var) :-
 verifica_unifica([]) :- !.
 
 verifica_unifica([P|R]) :-
-	nth0(0, P, Esp),
+	[Esp, Perms] = P,
 	vars_espaco(Esp, VarsEsp),
-	nth0(1, P, Perms),
 	bagof(Perm, (member(Perm, Perms), subsumes_term(VarsEsp, Perm)), _),
 	% caso haja pelo menos uma, continua; caso contrario, verifica_unifica falha
 	verifica_unifica(R).
@@ -182,6 +175,10 @@ permutacoes_possiveis_espaco(Espacos, Perms_soma, Esp, [VarsEsp, Perms]) :-
 
 % -----------permutacoes_possiveis_espacos(Espacos, Perms_poss_esps)--------- %
 
+permutacoes_possiveis_espacos(Espacos, Perms_poss_esps) :-
+	permutacoes_soma_espacos(Espacos, Perms_soma),
+	maplist(permutacoes_possiveis_espaco(Espacos, Perms_soma), Espacos, Perms_poss_esps).
+
 % -----------------numeros_comuns(Lst_Perms, Numeros_comuns)----------------- %
 
 numeros_comuns(Lst_Perms, Numeros_comuns) :-
@@ -192,7 +189,27 @@ numeros_comuns(Lst_Perms, Numeros_comuns) :-
 
 % ----------------------atribui_comuns(Perms_possiveis)---------------------- %
 
+atribui_comuns([]) :- !.
+
+atribui_comuns([Set|R]) :-
+	[Vars, Perms] = Set,
+	numeros_comuns(Perms, Comuns),
+	substitui_vars(Vars, Comuns),
+	atribui_comuns(R).
+
+substitui_vars(_, []) :- !.
+
+substitui_vars(Vars, [(Indice, Valor)|R]) :-
+	nth1(Indice, Vars, Valor),
+	substitui_vars(Vars, R).
+
 % ---------retira_impossiveis(Perms_Possiveis, Novas_Perms_Possiveis--------- %
+
+retira_impossiveis([], []) :- !.
+
+retira_impossiveis([[Vars, Perms]|R], [[Vars, NovasPossiveis]|T]) :-
+	bagof(Perm, (member(Perm, Perms), copy_term(Perm, PermCopy), PermCopy = Vars), NovasPossiveis),
+	retira_impossiveis(R, T).
 
 % -------------simplifica(Perms_Possiveis, Novas_Perms_Possiveis------------- %
 
