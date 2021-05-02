@@ -208,10 +208,11 @@ substitui_vars(Vars, [(Indice, Valor)|R]) :-
 retira_impossiveis([], []) :- !.
 
 retira_impossiveis([[Vars, Perms]|R], [[Vars, NovasPossiveis]|T]) :-
-	bagof(Perm, (member(Perm, Perms), copy_term(Perm, PermCopy), PermCopy = Vars), NovasPossiveis),
+	bagof(Perm, (member(Perm, Perms), \+ \+ =(Vars, Perm)), NovasPossiveis),
 	retira_impossiveis(R, T).
 
 % -------------simplifica(Perms_Possiveis, Novas_Perms_Possiveis------------- %
+
 
 % --------------------inicializa(Puzzle, Perms_Possiveis)-------------------- %
 
