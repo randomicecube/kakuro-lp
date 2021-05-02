@@ -26,14 +26,14 @@ espaco_fila(Fila, Esp, H_V) :-
 % quando chegamos ao fim da fila
 espaco_fila([], Esp, _, VarsAtuais, SomaAtual) :-
 	length(VarsAtuais, Comp), Comp > 0,
-	faz_espaco(SomaAtual, VarsAtuais, Esp).
+	cria_espaco(SomaAtual, VarsAtuais, Esp).
 
 % quando e uma lista e vem depois de um espaco
 espaco_fila([P|_], Esp, _, VarsAtuais, SomaAtual) :-
 	is_list(P),
 	length(VarsAtuais, Comp), Comp > 0,
 	SomaAtual > -1,
-	faz_espaco(SomaAtual, VarsAtuais, Esp).
+	cria_espaco(SomaAtual, VarsAtuais, Esp).
 
 % quando e uma variavel (parte do espaco, portanto)
 espaco_fila([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
@@ -136,7 +136,7 @@ substitui_comuns(PermPossivel, VarsEsp, [P|R], [[EspMod, PermsP]|T]) :-
 	vars_espaco(EspP, VarsP),
 	soma_espaco(EspP, SomaP),
 	maplist(substitui_aux(PermPossivel, VarsEsp), VarsP, VarsMod),
-	faz_espaco(SomaP, VarsMod, EspMod),
+	cria_espaco(SomaP, VarsMod, EspMod),
 	substitui_comuns(PermPossivel, VarsEsp, R, T).
 
 substitui_aux(_, VarsEsp, Var, Var) :-
@@ -275,9 +275,9 @@ resolve(Puzzle) :-
 
 % ------------------------------------espaco--------------------------------- %
 
-% faz_espaco(Soma, Vars, Espaco) - construtor
+% cria_espaco(Soma, Vars, Espaco) - construtor
 
-faz_espaco(Soma, Vars, espaco(Soma, Vars)).
+cria_espaco(Soma, Vars, espaco(Soma, Vars)).
 
 % soma_espaco(Espaco, Soma) - seletor
 soma_espaco(espaco(Soma, _), Soma).
