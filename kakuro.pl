@@ -1,5 +1,7 @@
 % Diogo Gaspar, 99207
 
+:- [codigo_comum].
+
 % --------------------------------------------------------------------------- %
 % ----------------------------PREDICADOS PRINCIPAIS-------------------------- %
 % --------------------------------------------------------------------------- %
@@ -21,30 +23,30 @@ permutacoes_soma(N, Els, Soma, Perms) :-
 
 espaco_fila(Fila, Esp, H_V) :-
 	% as novas variaveis sao a lista aux. para variaveis e a soma atual
-	espaco_fila(Fila, Esp, H_V, [], -1). % -1 enquanto nao houver uma soma "real"
+	espaco_fila_aux(Fila, Esp, H_V, [], -1). % -1 enquanto nao houver uma soma "real"
 
 % quando chegamos ao fim da fila
-espaco_fila([], Esp, _, VarsAtuais, SomaAtual) :-
+espaco_fila_aux([], Esp, _, VarsAtuais, SomaAtual) :-
 	length(VarsAtuais, Comp), Comp > 0,
 	cria_espaco(SomaAtual, VarsAtuais, Esp).
 
 % quando e uma lista e vem depois de um espaco
-espaco_fila([P|_], Esp, _, VarsAtuais, SomaAtual) :-
+espaco_fila_aux([P|_], Esp, _, VarsAtuais, SomaAtual) :-
 	is_list(P),
 	length(VarsAtuais, Comp), Comp > 0,
 	SomaAtual > -1,
 	cria_espaco(SomaAtual, VarsAtuais, Esp).
 
 % quando e uma variavel (parte do espaco, portanto)
-espaco_fila([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
+espaco_fila_aux([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
 	var(P), !,
 	append(VarsAtuais, [P], VarsAtualizadas),
-	espaco_fila(R, Esp, H_V, VarsAtualizadas, SomaAtual).
+	espaco_fila_aux(R, Esp, H_V, VarsAtualizadas, SomaAtual).
 
 % quando e o primeiro elemento da fila/uma lista depois de outra lista
-espaco_fila([P|R], Esp, H_V, _, _) :-
+espaco_fila_aux([P|R], Esp, H_V, _, _) :-
 	acessa_indice(P, H_V, NovaSoma),
-	espaco_fila(R, Esp, H_V, [], NovaSoma).
+	espaco_fila_aux(R, Esp, H_V, [], NovaSoma).
 
 % predicado auxiliar - acessa_indice(L, H_V, Soma)
 
@@ -53,7 +55,6 @@ acessa_indice([Soma, _], v, Soma).
 
 acessa_indice([_, Soma], h, Soma).
 
-% salvaguarda para H_V's errados
 acessa_indice(_, H_V, _) :-
 	H_V \== v,
 	H_V \== h.
@@ -102,7 +103,7 @@ permutacoes_soma_espacos([Esp|R], [[Esp, Perms]|Perms_soma]) :-
 	permutacoes_soma(CompEsp, Possiveis, SomaEsp, Perms),  
 	permutacoes_soma_espacos(R, Perms_soma).
 
-% predicado auxiliar, lista de 1 até N, caso 1 <= N < 9; de 1 a 9 caso N >= 9
+% predicado auxiliar, lista de 1 ate N, caso 1 <= N < 9; de 1 a 9 caso N >= 9
 faz_lista(N, L) :-
 	N < 9 -> findall(Iterador, between(1, N, Iterador), L);
 	findall(Iterador, between(1, 9, Iterador), L).
@@ -129,15 +130,16 @@ verifica_comuns(Esps, Set) :-
 	nth0(0, Set, Esp),
 	pertence(Esps, Esp).
 
-substitui_comuns(_, _, [], []) :- !.
-
 substitui_comuns(PermPossivel, VarsEsp, [P|R], [[EspMod, PermsP]|T]) :-
+	!,
 	[EspP, PermsP] = P,
 	vars_espaco(EspP, VarsP),
 	soma_espaco(EspP, SomaP),
 	maplist(substitui_aux(PermPossivel, VarsEsp), VarsP, VarsMod),
 	cria_espaco(SomaP, VarsMod, EspMod),
 	substitui_comuns(PermPossivel, VarsEsp, R, T).
+
+substitui_comuns(_, _, [], []).
 
 substitui_aux(_, VarsEsp, Var, Var) :-
 	\+ pertence(VarsEsp, Var), !.
@@ -147,25 +149,27 @@ substitui_aux(PermPossivel, VarsEsp, Var, ValorPerm) :-
  	nth0(Indice, PermPossivel, ValorPerm).
 
 % predicado auxiliar semelhante ao nth0/3, mas sem unificar
-busca_indice(Indice, VarsEsp, Var) :- busca_indice(0, Indice, VarsEsp, Var).
+busca_indice(Indice, VarsEsp, Var) :- busca_indice_aux(0, Indice, VarsEsp, Var).
 
-busca_indice(Ac, Ac, [P|_], Var) :-
+busca_indice_aux(Ac, Ac, [P|_], Var) :-
 	P == Var, !.
 
-busca_indice(Ac, Indice, [_|R], Var) :-
+busca_indice_aux(Ac, Indice, [_|R], Var) :-
 	NewAc is Ac + 1,
-	busca_indice(NewAc, Indice, R, Var).
+	busca_indice_aux(NewAc, Indice, R, Var).
 
 % predicado auxiliar que verifica se com a substituicao de variaveis proposta
 % ha pelo menos uma permutacao que mantem a permutacao original certa
-verifica_unifica([]) :- !.
 
 verifica_unifica([P|R]) :-
+	!,
 	[Esp, Perms] = P,
 	vars_espaco(Esp, VarsEsp),
 	bagof(Perm, (member(Perm, Perms), subsumes_term(VarsEsp, Perm)), _),
 	% caso haja pelo menos uma, continua; caso contrario, verifica_unifica falha
 	verifica_unifica(R).
+
+verifica_unifica([]).
 
 % -----permutacoes_possiveis_espaco(Espacos, Perms_soma, Esp, Perms_poss)---- %
 
@@ -189,34 +193,36 @@ numeros_comuns(Lst_Perms, Numeros_comuns) :-
 
 % ----------------------atribui_comuns(Perms_possiveis)---------------------- %
 
-atribui_comuns([]) :- !.
-
 atribui_comuns([Set|R]) :-
+	!,
 	[Vars, Perms] = Set,
 	numeros_comuns(Perms, Comuns),
 	substitui_vars(Vars, Comuns),
 	atribui_comuns(R).
 
-substitui_vars(_, []) :- !.
+atribui_comuns([]).
 
 substitui_vars(Vars, [(Indice, Valor)|R]) :-
-	nth1(Indice, Vars, Valor),
+	nth1(Indice, Vars, Valor), !,
 	substitui_vars(Vars, R).
+
+substitui_vars(_, []).
 
 % ---------retira_impossiveis(Perms_Possiveis, Novas_Perms_Possiveis--------- %
 
-retira_impossiveis([], []) :- !.
-
 retira_impossiveis([[Vars, Perms]|R], [[Vars, NovasPossiveis]|T]) :-
+	!,
 	bagof(Perm, (member(Perm, Perms), \+ \+ =(Vars, Perm)), NovasPossiveis),
 	retira_impossiveis(R, T).
+
+retira_impossiveis([], []).
 
 % -------------simplifica(Perms_Possiveis, Novas_Perms_Possiveis------------- %
 
 simplifica(Perms_Possiveis, Novas_Perms_Possiveis) :-
 	atribui_comuns(Perms_Possiveis),
 	retira_impossiveis(Perms_Possiveis, Temp),
-	Temp \== Perms_Possiveis, !, % verificar se houve alteracao
+	Temp \== Perms_Possiveis, !,
 	simplifica(Temp, Novas_Perms_Possiveis).
 
 simplifica(Perms_Possiveis, Perms_Possiveis).
@@ -231,18 +237,19 @@ inicializa(Puzzle, Perms_Possiveis) :-
 % ------------escolhe_menos_alternativas(Perms_Possiveis, Escolha)----------- %
 
 escolhe_menos_alternativas(Perms_Possiveis, Escolha) :-
-	escolhe_menos_alternativas(1, Perms_Possiveis, Escolha),
-	Escolha \== [], !.
+	escolhe_menos_alternativas_aux(1, Perms_Possiveis, Escolha),
+	Escolha \== [].
 
-escolhe_menos_alternativas(_, [], []).
-
-escolhe_menos_alternativas(MComp, [[Vars, Perms]|R], [Vars, Perms]) :-
+escolhe_menos_alternativas_aux(MComp, [[Vars, Perms]|R], [Vars, Perms]) :-
 	length(Perms, CompPerms), 
 	CompPerms > MComp, !,
-	escolhe_menos_alternativas(CompPerms, R, _).
+	escolhe_menos_alternativas_aux(CompPerms, R, _).
 
-escolhe_menos_alternativas(MComp, [_|R], Escolha) :-
-	escolhe_menos_alternativas(MComp, R, Escolha).
+escolhe_menos_alternativas_aux(MComp, [_|R], Escolha) :-
+	!,
+	escolhe_menos_alternativas_aux(MComp, R, Escolha).
+
+escolhe_menos_alternativas_aux(_, [], []).
 
 % ------experimenta_perm(Escolha, Perms_Possiveis, Novas_Perms_Possiveis)---- %
 
@@ -260,7 +267,15 @@ resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis) :-
 	simplifica(AposExp, AposSimp),
 	resolve_aux(AposSimp, Novas_Perms_Possiveis).
 
-resolve_aux(Perms_Possiveis, Perms_Possiveis).
+resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis) :-
+	resolve_vars(Perms_Possiveis, Novas_Perms_Possiveis),
+	Perms_Possiveis = Novas_Perms_Possiveis.
+
+resolve_vars([[_, [Perm]]|R], [[Perm, [Perm]]|T]) :-
+	!,
+	resolve_vars(R, T).
+
+resolve_vars([], []).
 
 % ---------------------------------resolve(Puz)------------------------------ %
 
