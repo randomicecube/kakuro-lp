@@ -1,6 +1,5 @@
 % Diogo Gaspar, 99207
 
-:- [codigo_comum].
 
 % --------------------------------------------------------------------------- %
 % ----------------------------PREDICADOS PRINCIPAIS-------------------------- %
@@ -111,65 +110,33 @@ faz_lista(N, L) :-
 % ---------permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma)-------- %
 
 permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
-	espacos_com_posicoes_comuns(Espacos, Esp, EspsComuns),
-	include(verifica_comuns(EspsComuns), Perms_soma, SetsComuns),
-	permutacoes_soma_espacos([Esp], SetEspAux),
-	% alisar SetEsp
-	append(SetEspAux, SetEsp),
-	nth0(1, SetEsp, PermsEsp),
+	espacos_com_posicoes_comuns(Espacos, Esp, Comuns),
+	include(condensa(Comuns), Perms_soma, Condensadas),
+	permutacoes_soma_espacos([Esp], [[Esp, PermsEsp]]),
+	write('PermsEsp is: '), writeln(PermsEsp),
 	vars_espaco(Esp, VarsEsp),
-	member(PermPossivel, PermsEsp),
-	substitui_comuns(PermPossivel, VarsEsp, SetsComuns, SetsPost),
-	verifica_unifica(SetsPost),
-	% caso possa, Perm unifica com PermPossivel
-	Perm = PermPossivel.
+	member(Perm, PermsEsp),
+	write('Perm is: '), writeln(Perm),
+	unificaveis(Perm, VarsEsp, Condensadas).
 
-% predicado auxiliar que recebe uma lista de espacos e um "set" de Perms_soma
-% e verifica se o espaco desse set pertence a lista
-verifica_comuns(Esps, Set) :-
-	nth0(0, Set, Esp),
-	pertence(Esps, Esp).
+condensa(Esps, [Esp, _]) :- member(Esp, Esps).
 
-substitui_comuns(PermPossivel, VarsEsp, [P|R], [[EspMod, PermsP]|T]) :-
-	!,
-	[EspP, PermsP] = P,
-	vars_espaco(EspP, VarsP),
-	soma_espaco(EspP, SomaP),
-	maplist(substitui_aux(PermPossivel, VarsEsp), VarsP, VarsMod),
-	cria_espaco(SomaP, VarsMod, EspMod),
-	substitui_comuns(PermPossivel, VarsEsp, R, T).
+unificaveis([], [], []).
 
-substitui_comuns(_, _, [], []).
-
-substitui_aux(_, VarsEsp, Var, Var) :-
-	\+ pertence(VarsEsp, Var), !.
-
-substitui_aux(PermPossivel, VarsEsp, Var, ValorPerm) :-
-	busca_indice(Indice, VarsEsp, Var),
- 	nth0(Indice, PermPossivel, ValorPerm).
-
-% predicado auxiliar semelhante ao nth0/3, mas sem unificar
-busca_indice(Indice, VarsEsp, Var) :- busca_indice_aux(0, Indice, VarsEsp, Var).
-
-busca_indice_aux(Ac, Ac, [P|_], Var) :-
-	P == Var, !.
-
-busca_indice_aux(Ac, Indice, [_|R], Var) :-
-	NewAc is Ac + 1,
-	busca_indice_aux(NewAc, Indice, R, Var).
-
-% predicado auxiliar que verifica se com a substituicao de variaveis proposta
-% ha pelo menos uma permutacao que mantem a permutacao original certa
-
-verifica_unifica([P|R]) :-
-	!,
-	[Esp, Perms] = P,
+unificaveis([Valor|R], [Var|Resto_vars], [[Esp, Perms]|Resto_perms]) :-
 	vars_espaco(Esp, VarsEsp),
-	bagof(Perm, (member(Perm, Perms), subsumes_term(VarsEsp, Perm)), _),
-	% caso haja pelo menos uma, continua; caso contrario, verifica_unifica falha
-	verifica_unifica(R).
+	substitui(Valor, Var, VarsEsp, VarsSubst),
+	findall(Perm, (member(Perm, Perms), Perm = VarsSubst), Unificados),
+	length(Unificados, Comp), Comp > 0,
+	unificaveis(R, Resto_vars, Resto_perms).
 
-verifica_unifica([]).
+substitui(Valor, Var, [VarDif|R], [VarDif|T]) :-
+	Var \== VarDif, !,
+	substitui(Valor, Var, R, T).
+
+substitui(Valor, _, [_|R], [Valor|T]) :- substitui(_, _, R, T).
+
+substitui(_, _, [], []).
 
 % -----permutacoes_possiveis_espaco(Espacos, Perms_soma, Esp, Perms_poss)---- %
 
