@@ -249,25 +249,24 @@ escolhe_menos_alternativas(MComp, [_|R], Escolha) :-
 experimenta_perm([Esp, Lst_Perms], Perms_Possiveis, Novas_Perms_Possiveis) :-
 	member(Perm, Lst_Perms),
 	Esp = Perm,
-	insere([Esp, Perm], [Esp, Lst_Perms], Perms_Possiveis, Novas_Perms_Possiveis).
-
-insere(_, _, [], []) :- !.
-
-insere(_, [Esp, Lst_Perms], [P|R], [P|T]) :-
-	P \== [Esp, Lst_Perms], !,
-	insere(_, [Esp, Lst_Perms], R, T).
-
-insere([Esp, Perm], [Esp, Lst_Perms], [_|R], [[Esp, Perm]|T]) :-
-	insere([Esp, Perm], [Esp, Lst_Perms], R, T).
+	append(Inicio, [[Esp, Lst_Perms]|Fim], Perms_Possiveis),
+	append(Inicio, [[Esp, [Perm]]|Fim], Novas_Perms_Possiveis).
 
 % -------------resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis)----------- % 
 
+resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis) :-
+	escolhe_menos_alternativas(Perms_Possiveis, Escolha), !,
+	experimenta_perm(Escolha, Perms_Possiveis, AposExp),
+	simplifica(AposExp, AposSimp),
+	resolve_aux(AposSimp, Novas_Perms_Possiveis).
+
+resolve_aux(Perms_Possiveis, Perms_Possiveis).
 
 % ---------------------------------resolve(Puz)------------------------------ %
 
 resolve(Puzzle) :-
 	inicializa(Puzzle, Perms_Possiveis),
-	resolve_aux(Perms_Possiveis, Puzzle).
+	resolve_aux(Perms_Possiveis, _).
 
 % --------------------------------------------------------------------------- %
 % ----------------------------------ESTRUTURAS------------------------------- %
