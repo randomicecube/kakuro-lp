@@ -1,5 +1,6 @@
 % Diogo Gaspar, 99207
 
+:- [codigo_comum].
 
 % --------------------------------------------------------------------------- %
 % ----------------------------PREDICADOS PRINCIPAIS-------------------------- %
@@ -26,14 +27,7 @@ espaco_fila(Fila, Esp, H_V) :-
 
 % quando chegamos ao fim da fila
 espaco_fila_aux([], Esp, _, VarsAtuais, SomaAtual) :-
-	length(VarsAtuais, Comp), Comp > 0,
-	cria_espaco(SomaAtual, VarsAtuais, Esp).
-
-% quando e uma lista e vem depois de um espaco
-espaco_fila_aux([P|_], Esp, _, VarsAtuais, SomaAtual) :-
-	is_list(P),
-	length(VarsAtuais, Comp), Comp > 0,
-	SomaAtual > -1,
+	VarsAtuais \== [],
 	cria_espaco(SomaAtual, VarsAtuais, Esp).
 
 % quando e uma variavel (parte do espaco, portanto)
@@ -41,6 +35,13 @@ espaco_fila_aux([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
 	var(P), !,
 	append(VarsAtuais, [P], VarsAtualizadas),
 	espaco_fila_aux(R, Esp, H_V, VarsAtualizadas, SomaAtual).
+
+% quando e uma lista e vem depois de um espaco
+espaco_fila_aux([P|_], Esp, _, VarsAtuais, SomaAtual) :-
+	is_list(P),
+	VarsAtuais \== [],
+	SomaAtual > -1,
+	cria_espaco(SomaAtual, VarsAtuais, Esp).
 
 % quando e o primeiro elemento da fila/uma lista depois de outra lista
 espaco_fila_aux([P|R], Esp, H_V, _, _) :-
@@ -113,22 +114,20 @@ permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
 	espacos_com_posicoes_comuns(Espacos, Esp, Comuns),
 	include(condensa(Comuns), Perms_soma, Condensadas),
 	permutacoes_soma_espacos([Esp], [[Esp, PermsEsp]]),
-	write('PermsEsp is: '), writeln(PermsEsp),
 	vars_espaco(Esp, VarsEsp),
 	member(Perm, PermsEsp),
-	write('Perm is: '), writeln(Perm),
 	unificaveis(Perm, VarsEsp, Condensadas).
 
-condensa(Esps, [Esp, _]) :- member(Esp, Esps).
-
-unificaveis([], [], []).
+condensa(Esps, [Esp, _]) :- pertence(Esps, Esp).
 
 unificaveis([Valor|R], [Var|Resto_vars], [[Esp, Perms]|Resto_perms]) :-
 	vars_espaco(Esp, VarsEsp),
 	substitui(Valor, Var, VarsEsp, VarsSubst),
 	findall(Perm, (member(Perm, Perms), Perm = VarsSubst), Unificados),
-	length(Unificados, Comp), Comp > 0,
+	Unificados \== [],
 	unificaveis(R, Resto_vars, Resto_perms).
+
+unificaveis([], [], []).
 
 substitui(Valor, Var, [VarDif|R], [VarDif|T]) :-
 	Var \== VarDif, !,
@@ -153,16 +152,20 @@ permutacoes_possiveis_espacos(Espacos, Perms_poss_esps) :-
 % -----------------numeros_comuns(Lst_Perms, Numeros_comuns)----------------- %
 
 numeros_comuns(Lst_Perms, Numeros_comuns) :-
-	% a tranposta sera utilizada para facilitar a comparacao
-	mat_transposta(Lst_Perms, Transp),
-	findall((Pos, N), (member(SubL, Transp), list_to_set(SubL, [_]), 
-					nth1(Pos, Transp, SubL), nth1(1, SubL, N)), Numeros_comuns).
+	nth0(0, Lst_Perms, SubLista),
+	length(SubLista, Comp),
+	findall((Indice, El), 
+		(between(1, Comp, Indice), 
+		nth1(Indice, SubLista, El),
+		maplist(iguais(Indice, El), Lst_Perms)),
+		Numeros_comuns).
+	
+iguais(Indice, El, Perm) :- nth1(Indice, Perm, El).
 
 % ----------------------atribui_comuns(Perms_possiveis)---------------------- %
 
-atribui_comuns([Set|R]) :-
+atribui_comuns([[Vars, Perms]|R]) :-
 	!,
-	[Vars, Perms] = Set,
 	numeros_comuns(Perms, Comuns),
 	substitui_vars(Vars, Comuns),
 	atribui_comuns(R).
@@ -175,7 +178,7 @@ substitui_vars(Vars, [(Indice, Valor)|R]) :-
 
 substitui_vars(_, []).
 
-% ---------retira_impossiveis(Perms_Possiveis, Novas_Perms_Possiveis--------- %
+% ---------retira_impossiveis(Perms_Possiveis, Novas_Perms_Possiveis)-------- %
 
 retira_impossiveis([[Vars, Perms]|R], [[Vars, NovasPossiveis]|T]) :-
 	!,
@@ -184,15 +187,18 @@ retira_impossiveis([[Vars, Perms]|R], [[Vars, NovasPossiveis]|T]) :-
 
 retira_impossiveis([], []).
 
-% -------------simplifica(Perms_Possiveis, Novas_Perms_Possiveis------------- %
+% -------------simplifica(Perms_Possiveis, Novas_Perms_Possiveis)------------ %
 
 simplifica(Perms_Possiveis, Novas_Perms_Possiveis) :-
 	atribui_comuns(Perms_Possiveis),
 	retira_impossiveis(Perms_Possiveis, Temp),
-	Temp \== Perms_Possiveis, !,
-	simplifica(Temp, Novas_Perms_Possiveis).
+	Temp == Perms_Possiveis, !,
+	Novas_Perms_Possiveis = Temp.
 
-simplifica(Perms_Possiveis, Perms_Possiveis).
+simplifica(Perms_Possiveis, Novas_Perms_Possiveis) :-
+	atribui_comuns(Perms_Possiveis),
+	retira_impossiveis(Perms_Possiveis, Temp),
+	simplifica(Temp, Novas_Perms_Possiveis).
 
 % --------------------inicializa(Puzzle, Perms_Possiveis)-------------------- %
 
