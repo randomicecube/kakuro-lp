@@ -23,7 +23,7 @@ permutacoes_soma(N, Els, Soma, Perms) :-
 
 espaco_fila(Fila, Esp, H_V) :-
 	% as novas variaveis sao a lista aux. para variaveis e a soma atual
-	espaco_fila_aux(Fila, Esp, H_V, [], -1). % -1 enquanto nao houver uma soma "real"
+	espaco_fila_aux(Fila, Esp, H_V, [], -1). % -1 enquanto nao houver uma soma
 
 % quando chegamos ao fim da fila
 espaco_fila_aux([], Esp, _, VarsAtuais, SomaAtual) :-
@@ -48,9 +48,7 @@ espaco_fila_aux([P|R], Esp, H_V, _, _) :-
 	acessa_indice(P, H_V, NovaSoma),
 	espaco_fila_aux(R, Esp, H_V, [], NovaSoma).
 
-% predicado auxiliar - acessa_indice(L, H_V, Soma)
-
-% predicado de decisao sobre qual elemento da lista aceder
+% predicado de decisao sobre qual a soma a escolher
 acessa_indice([Soma, _], v, Soma).
 
 acessa_indice([_, Soma], h, Soma).
@@ -80,7 +78,7 @@ espacos_puzzle(Puzzle, Espacos) :-
 espacos_com_posicoes_comuns(Espacos, Esp, Esps_com) :-
   vars_espaco(Esp, VarsEsp),
 	include(algum(VarsEsp), Espacos, Aux),
-	subtract(Aux, [Esp], Esps_com).
+	remove(Esp, Aux, Esps_com).
 
 algum(Vars, Espaco) :-
 	vars_espaco(Espaco, VarsEsp),
@@ -90,6 +88,17 @@ algum(Vars, Espaco) :-
 pertence([P|_], X) :- X == P, !.
 
 pertence([_|R], X) :- pertence(R, X).
+
+% predicado auxiliar, semelhante ao subtract/3 mas sem a unificacao
+remove(El, [P|R], [P|T]) :-
+	P \== El, !,
+	remove(El, R, T).
+
+remove(_, [_|R], T) :-
+	remove(_, R, T).
+
+remove(_, [], []).
+
 
 % ---------------permutacoes_soma_espacos(Espacos, Perms_soma)--------------- %
 
@@ -118,8 +127,12 @@ permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
 	member(Perm, PermsEsp),
 	unificaveis(Perm, VarsEsp, Condensadas).
 
+% predicado auxiliar para compactar Perms_soma, considerando os espacos comuns
 condensa(Esps, [Esp, _]) :- pertence(Esps, Esp).
 
+% predicado auxiliar que verifica se Perm e possivel para o espaco,
+% fazendo a substituicao da Var em comum com Esp e verificando se continua a
+% haver pelo menos uma unificacao possivel 
 unificaveis([Valor|R], [Var|Resto_vars], [[Esp, Perms]|Resto_perms]) :-
 	vars_espaco(Esp, VarsEsp),
 	substitui(Valor, Var, VarsEsp, VarsSubst),
@@ -129,6 +142,7 @@ unificaveis([Valor|R], [Var|Resto_vars], [[Esp, Perms]|Resto_perms]) :-
 
 unificaveis([], [], []).
 
+% predicado auxiliar que realiza uma "falsa substituicao", sem unificar
 substitui(Valor, Var, [VarDif|R], [VarDif|T]) :-
 	Var \== VarDif, !,
 	substitui(Valor, Var, R, T).
@@ -159,7 +173,8 @@ numeros_comuns(Lst_Perms, Numeros_comuns) :-
 		nth1(Indice, SubLista, El),
 		maplist(iguais(Indice, El), Lst_Perms)),
 		Numeros_comuns).
-	
+
+% predicado auxiliar que verifica se El esta presente em Perm no indice Indice
 iguais(Indice, El, Perm) :- nth1(Indice, Perm, El).
 
 % ----------------------atribui_comuns(Perms_possiveis)---------------------- %
@@ -172,6 +187,8 @@ atribui_comuns([[Vars, Perms]|R]) :-
 
 atribui_comuns([]).
 
+% predicado auxiliar que, para todos os pares comuns, substitui Var por Valor
+% no Indice correto
 substitui_vars(Vars, [(Indice, Valor)|R]) :-
 	nth1(Indice, Vars, Valor), !,
 	substitui_vars(Vars, R).
@@ -244,6 +261,8 @@ resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis) :-
 	resolve_vars(Perms_Possiveis, Novas_Perms_Possiveis),
 	Perms_Possiveis = Novas_Perms_Possiveis.
 
+% predicado auxiliar que pega em Perms_Possiveis e a coloca sob os moldes
+% requeridos no enunciado
 resolve_vars([[_, [Perm]]|R], [[Perm, [Perm]]|T]) :-
 	!,
 	resolve_vars(R, T).
