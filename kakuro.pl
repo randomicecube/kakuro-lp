@@ -77,28 +77,17 @@ espacos_puzzle(Puzzle, Espacos) :-
 
 espacos_com_posicoes_comuns(Espacos, Esp, Esps_com) :-
   vars_espaco(Esp, VarsEsp),
-	include(algum(VarsEsp), Espacos, Aux),
-	remove(Esp, Aux, Esps_com).
+	include(algum(VarsEsp), Espacos, Esps_com).
 
 algum(Vars, Espaco) :-
 	vars_espaco(Espaco, VarsEsp),
+	Vars \== VarsEsp,
 	bagof(Var, (member(Var, Vars), pertence(VarsEsp, Var)), _).
 
 % predicado auxiliar, semelhante ao member/2 mas sem a unificacao
 pertence([P|_], X) :- X == P, !.
 
 pertence([_|R], X) :- pertence(R, X).
-
-% predicado auxiliar, semelhante ao subtract/3 mas sem a unificacao
-remove(El, [P|R], [P|T]) :-
-	P \== El, !,
-	remove(El, R, T).
-
-remove(_, [_|R], T) :-
-	remove(_, R, T).
-
-remove(_, [], []).
-
 
 % ---------------permutacoes_soma_espacos(Espacos, Perms_soma)--------------- %
 
@@ -227,19 +216,23 @@ inicializa(Puzzle, Perms_Possiveis) :-
 % ------------escolhe_menos_alternativas(Perms_Possiveis, Escolha)----------- %
 
 escolhe_menos_alternativas(Perms_Possiveis, Escolha) :-
-	escolhe_menos_alternativas_aux(1, Perms_Possiveis, Escolha),
-	Escolha \== [].
+	exclude(perm_unitaria, Perms_Possiveis, Nao_Unitarias),
+	Nao_Unitarias \== [],
+	menor_perm(Nao_Unitarias, Escolha).
 
-escolhe_menos_alternativas_aux(MComp, [[Vars, Perms]|R], [Vars, Perms]) :-
-	length(Perms, CompPerms), 
-	CompPerms > MComp, !,
-	escolhe_menos_alternativas_aux(CompPerms, R, _).
+perm_unitaria([_, Perms]) :- 
+	length(Perms, Comp), Comp == 1.
 
-escolhe_menos_alternativas_aux(MComp, [_|R], Escolha) :-
-	!,
-	escolhe_menos_alternativas_aux(MComp, R, Escolha).
+menor_perm([[Vars, Perms]|R], Escolha) :-
+	length(Perms, Comp),
+	menor_perm_aux(R, [Vars, Perms], Escolha, Comp).
 
-escolhe_menos_alternativas_aux(_, [], []).
+menor_perm_aux([], Escolha, Escolha, _) :- !.
+
+menor_perm_aux([[Vars, Perms]|R], Atual, Escolha, CompAtual) :-
+	length(Perms, Comp),
+	Comp < CompAtual -> menor_perm_aux(R, [Vars, Perms], Escolha, Comp);
+	menor_perm_aux(R, Atual, Escolha, CompAtual).
 
 % ------experimenta_perm(Escolha, Perms_Possiveis, Novas_Perms_Possiveis)---- %
 
