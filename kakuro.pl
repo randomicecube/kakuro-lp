@@ -16,8 +16,7 @@ combinacoes_soma(N, Els, Soma, Combs) :-
 permutacoes_soma(N, Els, Soma, Perms) :-
   combinacoes_soma(N, Els, Soma, Combs),
   findall(Perm, (member(Comb, Combs), permutation(Comb, Perm)), AuxPerms),
-  % para ordenar as sublistas pelo primeiro (0) elemento
-  sort(0, <, AuxPerms, Perms).
+  sort(AuxPerms, Perms).
 
 % -------------------------espaco_fila(Fila, Esp, H_V)----------------------- %
 
@@ -52,10 +51,6 @@ espaco_fila_aux([P|R], Esp, H_V, _, _) :-
 acessa_indice([Soma, _], v, Soma).
 
 acessa_indice([_, Soma], h, Soma).
-
-acessa_indice(_, H_V, _) :-
-	H_V \== v,
-	H_V \== h.
 
 % ------------------------espacos_fila(Fila, Esp, H_V)----------------------- %
 
@@ -110,11 +105,11 @@ faz_lista(N, L) :-
 
 permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
 	espacos_com_posicoes_comuns(Espacos, Esp, Comuns),
-	include(condensa(Comuns), Perms_soma, Condensadas),
+	include(condensa(Comuns), Perms_soma, PermsComuns),
 	permutacoes_soma_espacos([Esp], [[Esp, PermsEsp]]),
 	vars_espaco(Esp, VarsEsp),
 	member(Perm, PermsEsp),
-	unificaveis(Perm, VarsEsp, Condensadas).
+	unificaveis(Perm, VarsEsp, PermsComuns).
 
 % predicado auxiliar para compactar Perms_soma, considerando os espacos comuns
 condensa(Esps, [Esp, _]) :- pertence(Esps, Esp).
@@ -125,11 +120,11 @@ condensa(Esps, [Esp, _]) :- pertence(Esps, Esp).
 unificaveis([Valor|R], [Var|Resto_vars], [[Esp, Perms]|Resto_perms]) :-
 	vars_espaco(Esp, VarsEsp),
 	substitui(Valor, Var, VarsEsp, VarsSubst),
-	findall(Perm, (member(Perm, Perms), Perm = VarsSubst), Unificados),
-	Unificados \== [],
+	findall(Perm, (member(Perm, Perms), =(Perm, VarsSubst)), Unificados),
+	Unificados \== [], !,
 	unificaveis(R, Resto_vars, Resto_perms).
 
-unificaveis([], [], []).
+unificaveis(_, _, []).
 
 % predicado auxiliar que realiza uma "falsa substituicao", sem unificar
 substitui(Valor, Var, [VarDif|R], [VarDif|T]) :-
@@ -251,16 +246,7 @@ resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis) :-
 	resolve_aux(AposSimp, Novas_Perms_Possiveis).
 
 resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis) :-
-	resolve_vars(Perms_Possiveis, Novas_Perms_Possiveis),
-	Perms_Possiveis = Novas_Perms_Possiveis.
-
-% predicado auxiliar que pega em Perms_Possiveis e a coloca sob os moldes
-% requeridos no enunciado
-resolve_vars([[_, [Perm]]|R], [[Perm, [Perm]]|T]) :-
-	!,
-	resolve_vars(R, T).
-
-resolve_vars([], []).
+	simplifica(Perms_Possiveis, Novas_Perms_Possiveis).
 
 % ---------------------------------resolve(Puz)------------------------------ %
 
