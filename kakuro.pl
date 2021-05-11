@@ -49,37 +49,28 @@ permutacoes_soma(N, Els, Soma, Perms) :-
 % consoante H_V seja v ou h, respetivamente
 
 espaco_fila(Fila, Esp, H_V) :-
-	% as novas variaveis sao a lista aux. para variaveis e a soma atual
-	espaco_fila(Fila, Esp, H_V, [], -1). % -1 enquanto nao houver uma soma
-
-% quando e uma variavel (parte do espaco, portanto)
-espaco_fila([P|R], Esp, H_V, VarsAtuais, SomaAtual) :-
-	var(P), !,
-	append(VarsAtuais, [P], VarsAtualizadas),
-	espaco_fila(R, Esp, H_V, VarsAtualizadas, SomaAtual).
-
-% quando e uma lista e vem depois de um espaco
-espaco_fila([P|_], Esp, _, VarsAtuais, SomaAtual) :-
-	is_list(P),
-	VarsAtuais \== [],
-	SomaAtual > -1,
-	cria_espaco(SomaAtual, VarsAtuais, Esp).
-
-% quando e o primeiro elemento da fila/uma lista depois de outra lista
-espaco_fila([P|R], Esp, H_V, _, _) :-
-	acessa_indice(P, H_V, NovaSoma),
-	espaco_fila(R, Esp, H_V, [], NovaSoma).
-
-% quando chegamos ao fim da fila
-espaco_fila([], Esp, _, VarsAtuais, SomaAtual) :-
-	VarsAtuais \== [],
-	cria_espaco(SomaAtual, VarsAtuais, Esp).
+	append([_, [ListaSomas|VarsEsp], Fim], Fila),
+	is_list(ListaSomas),
+	fim_possivel(Fim),
+	VarsEsp \== [], % o forall abaixo vai dar true se VarsEsp == []
+	forall(member(Membro, VarsEsp), var(Membro)),
+	acessa_indice(ListaSomas, H_V, SomaEsp),
+	cria_espaco(SomaEsp, VarsEsp, Esp).
 
 % acessa_indice(Lista, H_V, Soma)
 % Soma e a soma a retirar do indice 0 ou 1 de Lista, consoante H_V seja v ou h
-acessa_indice([Soma, _], v, Soma).
+
+acessa_indice([Soma, _], v, Soma) :- !.
 
 acessa_indice([_, Soma], h, Soma).
+
+% fim_possivel(Fim)
+% verifica se Fim e um fim possivel para fazer um espaco - verifica se a fila
+% acaba ou se ainda ha mais uma lista a frente
+
+fim_possivel([]) :- !.
+
+fim_possivel([P|_]) :- is_list(P).
 
 %-----------------------------------------------------------------------------%
 
@@ -103,11 +94,11 @@ espacos_puzzle(Puzzle, Espacos) :-
 	append(Horizontal, Vertical, PorAlisar),
 	append(PorAlisar, Espacos).
 
+%-----------------------------------------------------------------------------%
+
 % espacos_com_posicoes_comuns(Espacos, Esp, Esps_com)
 % Esps_com reune todos os espacos de Espacos que tenham uma variavel em comum
 % com Esp
-
-%-----------------------------------------------------------------------------%
 
 espacos_com_posicoes_comuns(Espacos, Esp, Esps_com) :-
   vars_espaco(Esp, VarsEsp),
@@ -135,7 +126,7 @@ pertence([_|R], X) :- pertence(R, X).
 % e um espaco de Espacos e o segundo a lista ordenada de permutacoes com soma
 % igual a soma do espaco
 
-permutacoes_soma_espacos([], []).
+permutacoes_soma_espacos([], []) :- !.
 
 permutacoes_soma_espacos([Esp|R], [[Esp, Perms]|Perms_soma]) :-
 	soma_espaco(Esp, SomaEsp),
@@ -150,8 +141,8 @@ permutacoes_soma_espacos([Esp|R], [[Esp, Perms]|Perms_soma]) :-
 % de 1 a 9 caso N >= 9
 
 faz_lista(N, L) :-
-	N < 9 -> findall(Iterador, between(1, N, Iterador), L);
-	findall(Iterador, between(1, 9, Iterador), L).
+	N < 9 -> numlist(1, N, L);
+	numlist(1, 9, L).
 
 %-----------------------------------------------------------------------------%
 
@@ -181,18 +172,10 @@ condensa(Esps, [Esp, _]) :- pertence(Esps, Esp).
 unificaveis([Valor|R], [Var|Resto_vars], [[Esp, Perms]|Resto_perms]) :-
 	vars_espaco(Esp, VarsEsp),
 	substitui(Valor, Var, VarsEsp, VarsSubst),
-	alguma_unifica(Perms, VarsSubst), !,
+	\+ forall(member(Perm, Perms), \+ =(Perm, VarsSubst)), !,
 	unificaveis(R, Resto_vars, Resto_perms).
 
 unificaveis(_, _, []).
-
-% alguma_unifica(Perms, Vars)
-% verifica se pelo menos uma permutacao da lista de permutacoes Perms pode
-% unificar com Vars
-
-alguma_unifica([Perm|_], Vars) :- \+ \+ =(Perm, Vars), !.
-
-alguma_unifica([_|R], Vars) :- alguma_unifica(R, Vars).
 
 % substitui(Valor, Var, Vars, VarsSubst)
 % VarsSubst corresponde a substituicao de Var, pertencente a Vars, por Valor
@@ -236,11 +219,8 @@ permutacoes_possiveis_espacos(Espacos, Perms_poss_esps) :-
 numeros_comuns(Lst_Perms, Numeros_comuns) :-
 	nth0(0, Lst_Perms, SubLista),
 	length(SubLista, Comp),
-	findall((Indice, El), 
-		(between(1, Comp, Indice), 
-		nth1(Indice, SubLista, El),
-		maplist(iguais(Indice, El), Lst_Perms)),
-		Numeros_comuns).
+	findall((Indice, El), (between(1, Comp, Indice), nth1(Indice, SubLista, El),
+					maplist(iguais(Indice, El), Lst_Perms)), Numeros_comuns).
 
 % iguais(Indice, El, Perm)
 % predicado auxiliar que verifica se El esta presente em Perm no indice Indice
@@ -292,13 +272,8 @@ retira_impossiveis([], []).
 simplifica(Perms_Possiveis, Novas_Perms_Possiveis) :-
 	atribui_comuns(Perms_Possiveis),
 	retira_impossiveis(Perms_Possiveis, Temp),
-	Temp == Perms_Possiveis, !,
-	Novas_Perms_Possiveis = Temp.
-
-simplifica(Perms_Possiveis, Novas_Perms_Possiveis) :-
-	atribui_comuns(Perms_Possiveis),
-	retira_impossiveis(Perms_Possiveis, Temp),
-	simplifica(Temp, Novas_Perms_Possiveis).
+	(Temp == Perms_Possiveis -> Novas_Perms_Possiveis = Temp;
+	simplifica(Temp, Novas_Perms_Possiveis)).
 
 %-----------------------------------------------------------------------------%
 
