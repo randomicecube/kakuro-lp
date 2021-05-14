@@ -23,43 +23,42 @@ vars_espaco(espaco(_, Vars), Vars).
 % ----------------------------PREDICADOS PRINCIPAIS-------------------------- %
 
 % combinacoes_soma(N, Els, Soma, Combs)
-% Combs e a lista ordenada de combinacoes N a N dos elementos de Els
+% Combs e a lista ordenada de combinacoes N a N dos elementos de Els 
 % com soma Soma
 
 combinacoes_soma(N, Els, Soma, Combs) :-
-  bagof(Comb, (combinacao(N, Els, Comb), sumlist(Comb, Soma)), Combs).
+  findall(Comb, (combinacao(N, Els, Comb), sumlist(Comb, Soma)), Combs).
 
 %-----------------------------------------------------------------------------%
 
 % permutacoes_soma(N, Els, Soma, Perms)
-% Perms e a lista ordenada cujos elementos sao as permutacoes
+% Perms e a lista ordenada cujos elementos sao as permutacoes 
 % das combinacoes N a N dos elementos Els com soma Soma
 
 %-----------------------------------------------------------------------------%
 
 permutacoes_soma(N, Els, Soma, Perms) :-
   combinacoes_soma(N, Els, Soma, Combs),
-	findall(Perm, (member(Comb, Combs), permutation(Comb, Perm)), AuxPerms),
-	sort(0, <, AuxPerms, Perms).
+  findall(Perm, (member(Comb, Combs), permutation(Comb, Perm)), AuxPerms),
+  sort(AuxPerms, Perms).
 
 %-----------------------------------------------------------------------------%
 
 % espaco_fila(Fila, Esp, H_V)
-% Esp e um espaco de Fila, considerando a "soma vertical/horizontal"
+% Esp e um espaco de Fila, considernando a "soma vertical/horizontal"
 % consoante H_V seja v ou h, respetivamente
 
 espaco_fila(Fila, Esp, H_V) :-
 	append([_, [ListaSomas|VarsEsp], Fim], Fila),
 	is_list(ListaSomas),
-	VarsEsp \== [],
 	fim_possivel(Fim),
+	VarsEsp \== [], % o forall abaixo vai dar true se VarsEsp == []
 	forall(member(Membro, VarsEsp), var(Membro)),
 	acessa_indice(ListaSomas, H_V, SomaEsp),
 	cria_espaco(SomaEsp, VarsEsp, Esp).
 
 % acessa_indice(Lista, H_V, Soma)
 % Soma e a soma a retirar do indice 0 ou 1 de Lista, consoante H_V seja v ou h
-
 acessa_indice([Soma, _], v, Soma) :- !.
 
 acessa_indice([_, Soma], h, Soma).
@@ -110,7 +109,7 @@ espacos_com_posicoes_comuns(Espacos, Esp, Esps_com) :-
 algum(Vars, Espaco) :-
 	vars_espaco(Espaco, VarsEsp),
 	Vars \== VarsEsp, % para nao incluir o proprio espaco
-	\+ include(pertence(VarsEsp), Vars, []).
+	bagof(Var, (member(Var, Vars), pertence(VarsEsp, Var)), _).
 
 % pertence(Lista, Membro)
 % verifica se Membro pertence a Lista, sem unificar
@@ -126,23 +125,23 @@ pertence([_|R], X) :- pertence(R, X).
 % e um espaco de Espacos e o segundo a lista ordenada de permutacoes com soma
 % igual a soma do espaco
 
-permutacoes_soma_espacos([], []) :- !.
+permutacoes_soma_espacos([], []).
 
 permutacoes_soma_espacos([Esp|R], [[Esp, Perms]|Perms_soma]) :-
 	soma_espaco(Esp, SomaEsp),
 	faz_lista(SomaEsp, Possiveis),
 	vars_espaco(Esp, VarsEsp),
 	length(VarsEsp, CompEsp),
-	permutacoes_soma(CompEsp, Possiveis, SomaEsp, Perms),
+	permutacoes_soma(CompEsp, Possiveis, SomaEsp, Perms),  
 	permutacoes_soma_espacos(R, Perms_soma).
 
 % faz_lista(N, L)
-% predicado auxiliar, faz uma lista de elementos 1 ate N, caso 1 <= N < 9;
+% predicado auxiliar, faz uma lista de elementos 1 ate N, caso 1 <= N < 9; 
 % de 1 a 9 caso N >= 9
 
 faz_lista(N, L) :-
-	N < 9 -> numlist(1, N, L);
-	numlist(1, 9, L).
+	N < 9 -> findall(Iterador, between(1, N, Iterador), L);
+	findall(Iterador, between(1, 9, Iterador), L).
 
 %-----------------------------------------------------------------------------%
 
@@ -162,7 +161,6 @@ permutacao_possivel_espaco(Perm, Esp, Espacos, Perms_soma) :-
 % condensa(Espacos, Perm_soma)
 % predicado auxiliar que verifica se o espaco de uma lista igual as sublistas
 % da lista obtida em permutacoes_soma_espacos (Perm_soma) pertence a Espacos
-
 condensa(Esps, [Esp, _]) :- pertence(Esps, Esp).
 
 % unificaveis(Perm, Vars, PermsComuns)
@@ -170,11 +168,32 @@ condensa(Esps, [Esp, _]) :- pertence(Esps, Esp).
 % no sitio correspondente em Perm, continua a haver pelo menos uma
 % permutacao no espaco em comum com essa variavel que pode unificar
 
-unificaveis([Valor|R], [_|Resto_vars], [[_, Perms]|Resto_perms]) :-
-	\+ include(member(Valor), Perms, []), !,
+unificaveis([Valor|R], [Var|Resto_vars], [[Esp, Perms]|Resto_perms]) :-
+	vars_espaco(Esp, VarsEsp),
+	substitui(Valor, Var, VarsEsp, VarsSubst),
+	alguma_unifica(Perms, VarsSubst), !,
 	unificaveis(R, Resto_vars, Resto_perms).
 
 unificaveis(_, _, []).
+
+% alguma_unifica(Perms, Vars)
+% verifica se pelo menos uma permutacao da lista de permutacoes Perms pode
+% unificar com Vars
+
+alguma_unifica([Perm|_], Vars) :- \+ \+ =(Perm, Vars), !.
+
+alguma_unifica([_|R], Vars) :- alguma_unifica(R, Vars).
+
+% substitui(Valor, Var, Vars, VarsSubst)
+% VarsSubst corresponde a substituicao de Var, pertencente a Vars, por Valor
+
+substitui(Valor, Var, [VarDif|R], [VarDif|T]) :-
+	Var \== VarDif, !,
+	substitui(Valor, Var, R, T).
+
+substitui(Valor, _, [_|R], [Valor|T]) :- substitui(_, _, R, T).
+
+substitui(_, _, [], []).
 
 %-----------------------------------------------------------------------------%
 
@@ -223,7 +242,7 @@ iguais(Indice, El, Perm) :- nth1(Indice, Perm, El).
 atribui_comuns([[Vars, Perms]|R]) :-
 	!,
 	numeros_comuns(Perms, Comuns),
-	maplist(substitui_vars(Vars), Comuns),
+	substitui_vars(Vars, Comuns),
 	atribui_comuns(R).
 
 atribui_comuns([]).
@@ -232,7 +251,11 @@ atribui_comuns([]).
 % predicado auxiliar que, para todos os pares comuns, substitui a variavel de
 % Vars de um dado Indice pelo Valor respetivo
 
-substitui_vars(Vars, (Indice, Valor)) :- nth1(Indice, Vars, Valor).
+substitui_vars(Vars, [(Indice, Valor)|R]) :-
+	nth1(Indice, Vars, Valor), !,
+	substitui_vars(Vars, R).
+
+substitui_vars(_, []).
 
 %-----------------------------------------------------------------------------%
 
@@ -242,7 +265,7 @@ substitui_vars(Vars, (Indice, Valor)) :- nth1(Indice, Vars, Valor).
 
 retira_impossiveis([[Vars, Perms]|R], [[Vars, NovasPossiveis]|T]) :-
 	!,
-	bagof(Perm, (member(Perm, Perms), subsumes_term(Vars, Perm)), NovasPossiveis),
+	bagof(Perm, (member(Perm, Perms), \+ \+ =(Vars, Perm)), NovasPossiveis),
 	retira_impossiveis(R, T).
 
 retira_impossiveis([], []).
@@ -278,15 +301,28 @@ inicializa(Puzzle, Perms_Possiveis) :-
 escolhe_menos_alternativas(Perms_Possiveis, Escolha) :-
 	exclude(perm_unitaria, Perms_Possiveis, Nao_Unitarias),
 	Nao_Unitarias \== [],
-	maplist(length, Nao_Unitarias, Comprimentos),
-	min_list(Comprimentos, MinComp),
-	nth0(Indice, Comprimentos, MinComp), !,
-	nth0(Indice, Nao_Unitarias, Escolha).
+	menor_perm(Nao_Unitarias, Escolha).
 
 % perm_unitaria(Lst_Perms)
 % verifica se Lst_Perms tem apenas uma permutacao
 
-perm_unitaria([_, Perms]) :- length(Perms, 1).
+perm_unitaria([_, Perms]) :- 
+	length(Perms, Comp), Comp == 1.
+
+% menor_perm(Perms, Escolha)
+% Escolha corresponde ao elemento de Perms escolhido segundo o criterio
+% indicado na seccao 2.2 do enunciado
+
+menor_perm([[Vars, Perms]|R], Escolha) :-
+	length(Perms, Comp),
+	menor_perm(R, [Vars, Perms], Escolha, Comp).
+
+menor_perm([], Escolha, Escolha, _) :- !.
+
+menor_perm([[Vars, Perms]|R], Atual, Escolha, CompAtual) :-
+	length(Perms, Comp),
+	Comp < CompAtual -> menor_perm(R, [Vars, Perms], Escolha, Comp);
+	menor_perm(R, Atual, Escolha, CompAtual).
 
 %-----------------------------------------------------------------------------%
 
@@ -316,7 +352,8 @@ resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis) :-
 	simplifica(AposExp, AposSimp),
 	resolve_aux(AposSimp, Novas_Perms_Possiveis).
 
-resolve_aux(Perms_Possiveis, Perms_Possiveis).
+resolve_aux(Perms_Possiveis, Novas_Perms_Possiveis) :-
+	simplifica(Perms_Possiveis, Novas_Perms_Possiveis).
 
 %-----------------------------------------------------------------------------%
 

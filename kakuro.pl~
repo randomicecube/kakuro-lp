@@ -23,7 +23,7 @@ vars_espaco(espaco(_, Vars), Vars).
 % ----------------------------PREDICADOS PRINCIPAIS-------------------------- %
 
 % combinacoes_soma(N, Els, Soma, Combs)
-% Combs e a lista ordenada de combinacoes N a N dos elementos de Els
+% Combs e a lista ordenada de combinacoes N a N dos elementos de Els 
 % com soma Soma
 
 combinacoes_soma(N, Els, Soma, Combs) :-
@@ -32,14 +32,14 @@ combinacoes_soma(N, Els, Soma, Combs) :-
 %-----------------------------------------------------------------------------%
 
 % permutacoes_soma(N, Els, Soma, Perms)
-% Perms e a lista ordenada cujos elementos sao as permutacoes
+% Perms e a lista ordenada cujos elementos sao as permutacoes 
 % das combinacoes N a N dos elementos Els com soma Soma
 
 %-----------------------------------------------------------------------------%
 
 permutacoes_soma(N, Els, Soma, Perms) :-
   combinacoes_soma(N, Els, Soma, Combs),
-	findall(Perm, (member(Comb, Combs), permutation(Comb, Perm)), AuxPerms),
+ 	findall(Perm, (member(Comb, Combs), permutation(Comb, Perm)), AuxPerms),
 	sort(0, <, AuxPerms, Perms).
 
 %-----------------------------------------------------------------------------%
@@ -133,11 +133,11 @@ permutacoes_soma_espacos([Esp|R], [[Esp, Perms]|Perms_soma]) :-
 	faz_lista(SomaEsp, Possiveis),
 	vars_espaco(Esp, VarsEsp),
 	length(VarsEsp, CompEsp),
-	permutacoes_soma(CompEsp, Possiveis, SomaEsp, Perms),
+	permutacoes_soma(CompEsp, Possiveis, SomaEsp, Perms),  
 	permutacoes_soma_espacos(R, Perms_soma).
 
 % faz_lista(N, L)
-% predicado auxiliar, faz uma lista de elementos 1 ate N, caso 1 <= N < 9;
+% predicado auxiliar, faz uma lista de elementos 1 ate N, caso 1 <= N < 9; 
 % de 1 a 9 caso N >= 9
 
 faz_lista(N, L) :-
@@ -242,7 +242,7 @@ substitui_vars(Vars, (Indice, Valor)) :- nth1(Indice, Vars, Valor).
 
 retira_impossiveis([[Vars, Perms]|R], [[Vars, NovasPossiveis]|T]) :-
 	!,
-	bagof(Perm, (member(Perm, Perms), subsumes_term(Vars, Perm)), NovasPossiveis),
+	bagof(Perm, (member(Perm, Perms), \+ \+ =(Vars, Perm)), NovasPossiveis),
 	retira_impossiveis(R, T).
 
 retira_impossiveis([], []).
